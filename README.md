@@ -5,3 +5,4 @@ Will Copilot solve all AoC puzzles ?
 |          | Puzzle 1 | Puzzle 2 |
 |----------|----------|----------|
 | Day 1    |       ⭐   |    ⭐      |
+| Day 2    |       ⭐   |    ⭐      |
