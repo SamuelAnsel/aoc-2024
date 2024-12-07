@@ -1,29 +1,55 @@
-def count_x_mas(word_search):
-    rows = word_search.strip().split('\n')
-    n = len(rows)
-    m = len(rows[0])
-    count = 0
+def parse_input(input):
+    rules_section, updates_section = input.strip().split("\n\n")
+    rules = [tuple(map(int, rule.split('|'))) for rule in rules_section.split('\n')]
+    updates = [list(map(int, update.split(','))) for update in updates_section.split('\n')]
+    return rules, updates
 
-    def check_x_mas(i, j):
-        patterns = [
-            [(0, 0), (1, -1), (1, 1), (2, -2), (2, 2)],  # MAS in X shape
-            [(0, 0), (1, 1), (1, -1), (2, 2), (2, -2)],  # MAS in X shape reversed
-        ]
-        for pattern in patterns:
-            if all(0 <= i + di < n and 0 <= j + dj < m and rows[i + di][j + dj] == 'M' for di, dj in pattern[:1]) and \
-               all(0 <= i + di < n and 0 <= j + dj < m and rows[i + di][j + dj] == 'A' for di, dj in pattern[1:2]) and \
-               all(0 <= i + di < n and 0 <= j + dj < m and rows[i + di][j + dj] == 'S' for di, dj in pattern[2:]):
-                return True
-        return False
+def is_correct_order(update, rules):
+    for x, y in rules:
+        if x in update and y in update and update.index(x) > update.index(y):
+            return False
+    return True
 
-    for i in range(n - 2):
-        for j in range(2, m - 2):
-            if check_x_mas(i, j):
-                count += 1
+def reorder_update(update, rules):
+    from collections import defaultdict, deque
 
-    return count
+    graph = defaultdict(list)
+    in_degree = defaultdict(int)
+    for x, y in rules:
+        if x in update and y in update:
+            graph[x].append(y)
+            in_degree[y] += 1
+            if x not in in_degree:
+                in_degree[x] = 0
 
-# Example usage
-input_data = open("input.txt").read()
+    queue = deque([node for node in update if in_degree[node] == 0])
+    ordered_update = []
 
-print(count_x_mas(input_data))  # Output: 9
+    while queue:
+        node = queue.popleft()
+        ordered_update.append(node)
+        for neighbor in graph[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    return ordered_update
+
+def middle_page_number(update):
+    return update[len(update) // 2]
+
+def solve(input):
+    rules, updates = parse_input(input)
+    correct_updates = [update for update in updates if is_correct_order(update, rules)]
+    incorrect_updates = [update for update in updates if not is_correct_order(update, rules)]
+
+    correct_middle_sum = sum(middle_page_number(update) for update in correct_updates)
+    reordered_middle_sum = sum(middle_page_number(reorder_update(update, rules)) for update in incorrect_updates)
+
+    return correct_middle_sum, reordered_middle_sum
+
+input = open("input.txt").read()
+
+correct_middle_sum, reordered_middle_sum = solve(input)
+print(f"Sum of middle page numbers for correctly ordered updates: {correct_middle_sum}")
+print(f"Sum of middle page numbers for reordered incorrect updates: {reordered_middle_sum}")
