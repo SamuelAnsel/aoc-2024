@@ -13,8 +13,9 @@ def is_correct_order(update, rules):
 def reorder_update(update, rules):
     from collections import defaultdict, deque
 
+    # Create a graph and in-degree count for topological sorting
     graph = defaultdict(list)
-    in_degree = defaultdict(int)
+    in_degree = defaultdict(int)  # in_degree keeps track of the number of incoming edges for each node
     for x, y in rules:
         if x in update and y in update:
             graph[x].append(y)
@@ -22,9 +23,11 @@ def reorder_update(update, rules):
             if x not in in_degree:
                 in_degree[x] = 0
 
+    # Initialize the queue with nodes having zero in-degree
     queue = deque([node for node in update if in_degree[node] == 0])
     ordered_update = []
 
+    # Perform topological sorting
     while queue:
         node = queue.popleft()
         ordered_update.append(node)
