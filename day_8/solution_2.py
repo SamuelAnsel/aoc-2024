@@ -1,36 +1,45 @@
 import numpy as np
-from collections import OrderedDict
+
 
 input_text = open("input.txt").read()
 
-OP = ['*', '+', 'concat']
+city_map = np.array([list(row) for row in input_text.split("\n")])
+M, N = city_map.shape
 
-def is_solvable(result, numbers):
-    if len(numbers) == 1:
-        return result == numbers[0]
-    
-    solvable = False
+frequencies = set(input_text)
+frequencies.remove(".")
+frequencies.remove("\n")
 
-    for op in OP:
-        if op == 'concat':
-            r = int(str(numbers[0]) + str(numbers[1]))
-        else:
-            r = eval(f"numbers[0] {op} numbers[1]")
+def city_block_dist(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-        if r <= result:
-            solvable |= is_solvable(result, [r, *numbers[2:]])
+def is_node(point, antennas, freq):
+    N = len(antennas[freq])
 
-    return solvable
+    for i in range(N):
+        for j in range(i + 1, N):
+            a1, a2 = antennas[freq][i], antennas[freq][j]
+            alligned = (a1[1] - a2[1]) * (a1[0] - point[0]) == (a1[1] - point[1]) * (a1[0] - a2[0])
 
-calib_res = 0
+            if alligned:
+                return True
+        
+    return False
 
-for eq in input_text.splitlines():
-    res, numbers = eq.split(':')
-    res = int(res)
-    
-    numbers = [int(x) for x in numbers.strip().split(' ')]
+antennas = {}
 
-    if is_solvable(res, numbers):
-        calib_res += res
+for freq in frequencies:
+    antennas[freq] = np.asarray(np.where(city_map == freq)).reshape(2, -1).T
 
-print(calib_res)
+node_count = 0
+
+for i in range(M):
+    for j in range(N):
+        for freq in frequencies:
+            if is_node((i, j), antennas, freq):
+                city_map[i, j] = "#"
+                node_count += 1
+
+                break
+
+print(node_count)
