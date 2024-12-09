@@ -1,39 +1,81 @@
-from collections import defaultdict
-from functools import cmp_to_key
+import numpy as np
+from collections import OrderedDict
 
 
 input_text = open("input.txt").read()
 
-rules, updates = input_text.split("\n\n")
-rules = rules.split("\n")
-updates = updates.split("\n")
+patrol_map = np.array([list(row) for row in input_text.split("\n")])
+M, N = patrol_map.shape
 
-after = defaultdict(list)
+direction = OrderedDict({
+    "^": (-1, 0),
+    ">": (0, 1),
+    "v": (1, 0),
+    "<": (0, -1)
+})
 
-for k, v in [rule.split("|") for rule in rules]:
-    after[k] += [v]
+valid_directions = list(direction.keys())
 
-middle = list()
+def next_direction(current):
+    return valid_directions[(valid_directions.index(current) + 1) % 4]
 
-for update in [x.split(',') for x in updates]:
-    correct = True
+def update(patrol_map):
+    new_patrol_map = np.copy(patrol_map)
+    valid = True
+    has_loop = False
 
-    for i in range(1, len(update)):
-        banned = set([item for j in range(i, len(update)) for item in after[update[j]]])
+    i, j = np.where(np.isin(patrol_map, valid_directions))
+    i, j = i[0], j[0]
 
-        if update[i - 1] in banned:
-            correct = False
-            break
+    current = new_patrol_map[i][j]
+    move = direction[current]
 
-
-    if not correct:
-        while not correct:
-            correct = True
-            for i in range(1, len(update))[::-1]:
-                if update[i - 1] in after[update[i]]:
-                    correct = False
-                    update[i], update[i - 1] = update[i - 1], update[i]
-
-        middle.append(int(update[len(update) // 2]))
+    if i + move[0] < 0 or i + move[0] >= M or j + move[1] < 0 or j + move[1] >= N:
+        valid = False
+        return new_patrol_map, valid, has_loop
     
-print(sum(middle))
+    next_dir = next_direction(current)
+
+    if new_patrol_map[i + move[0]][j + move[1]] == "#":
+        current = next_dir
+        move = direction[current]
+    else:
+        dir = next_dir # prevoir demi tour
+
+        if dir in ["^", "v"]:
+            wall = np.where(new_patrol_map[:, j] == "#")[0]
+
+            if wall.shape[0] > 0:
+                wall = wall[0]
+
+                after = direction[dir][0] * (wall - i) > 0
+
+                if after and new_patrol_map[wall - direction[dir][0], j] == "X":
+                    has_loop = True
+
+        elif dir in [">", "<"]:
+            wall = np.where(new_patrol_map[i, :] == "#")[0]
+
+            if wall.shape[0] > 0:
+                wall = wall[0]
+
+                after = direction[dir][1] * (wall - j) > 0
+
+                if after and new_patrol_map[i , wall - direction[dir][1]] == "X":
+                    has_loop = True
+
+    new_patrol_map[i][j] = "X"
+    new_patrol_map[i + move[0]][j + move[1]] = current
+
+    return new_patrol_map, valid, has_loop
+
+valid = True
+count = 0
+
+while valid:
+    patrol_map, valid, has_loop = update(patrol_map)
+
+    if has_loop:
+        count += 1
+
+print(count)

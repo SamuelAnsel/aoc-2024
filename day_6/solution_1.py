@@ -14,35 +14,30 @@ direction = OrderedDict({
     "<": (0, -1)
 })
 
+valid_directions = list(direction.keys())
+
 def update(patrol_map):
     new_patrol_map = np.copy(patrol_map)
     valid = True
-    found = False
 
-    for i in range(0, M):
-        for j in range(0, N):
-            current = new_patrol_map[i][j]
+    i, j = np.where(np.isin(patrol_map, valid_directions))
+    i, j = i[0], j[0]
 
-            if current in direction:
-                found = True
-                new_patrol_map[i][j] = "X"
-                move = direction[current]
+    current = new_patrol_map[i][j]
+    move = direction[current]
 
-                if i + move[0] < 0 or i + move[0] >= M or j + move[1] < 0 or j + move[1] >= N:
-                    valid = False
-                    break
-                
-                if new_patrol_map[i + move[0]][j + move[1]] == "#":
-                    L = list(direction.keys())
-                    current = L[(L.index(current) + 1) % 4]
-                    move = direction[current]
+    new_patrol_map[i][j] = "X"
 
-                new_patrol_map[i + move[0]][j + move[1]] = current
-                break
-        
-        if found:
-            break
+    if i + move[0] < 0 or i + move[0] >= M or j + move[1] < 0 or j + move[1] >= N:
+        valid = False
+        return new_patrol_map, valid
     
+    if new_patrol_map[i + move[0]][j + move[1]] == "#":
+        current = valid_directions[(valid_directions.index(current) + 1) % 4]
+        move = direction[current]
+
+    new_patrol_map[i + move[0]][j + move[1]] = current
+
     return new_patrol_map, valid
 
 valid = True
