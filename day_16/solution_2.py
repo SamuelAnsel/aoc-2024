@@ -18,23 +18,23 @@ input_text = """###############
 #S..#.....#...#
 ###############"""
 
-input_text = """#################
-#...#...#...#..E#
-#.#.#.#.#.#.#.#.#
-#.#.#.#...#...#.#
-#.#.#.#.###.#.#.#
-#...#.#.#.....#.#
-#.#.#.#.#.#####.#
-#.#...#.#.#.....#
-#.#.#####.#.###.#
-#.#.#.......#...#
-#.#.###.#####.###
-#.#.#...#.....#.#
-#.#.#.#####.###.#
-#.#.#.........#.#
-#.#.#.#########.#
-#S#.............#
-#################"""
+# input_text = """#################
+# #...#...#...#..E#
+# #.#.#.#.#.#.#.#.#
+# #.#.#.#...#...#.#
+# #.#.#.#.###.#.#.#
+# #...#.#.#.....#.#
+# #.#.#.#.#.#####.#
+# #.#...#.#.#.....#
+# #.#.#####.#.###.#
+# #.#.#.......#...#
+# #.#.###.#####.###
+# #.#.#...#.....#.#
+# #.#.#.#####.###.#
+# #.#.#.........#.#
+# #.#.#.#########.#
+# #S#.............#
+# #################"""
 
 maze = np.array([list(row) for row in input_text.split("\n")])
 
@@ -100,7 +100,7 @@ def dijkstra_all_paths(maze, start, end, best_cost):
     while pq:
         cost, x, y, prev_dir, path = heapq.heappop(pq)
         pdx, pdy = directions[prev_dir]
-
+        print(10 * "!")
         if (x, y) == tuple(end):
             if not best_paths or cost == best_cost:
                 best_paths.append((cost, path + [(x, y)]))
@@ -112,31 +112,61 @@ def dijkstra_all_paths(maze, start, end, best_cost):
         for i, (dx, dy) in enumerate(directions):
             nx, ny = x + dx, y + dy
 
+            print(i, (x, y), (nx, ny), (dx, dy), best_cost, min_cost(maze, (nx, ny), end), best_cost)
+
+            
+            if pdx == -dx and pdy == -dy:
+                continue
+
             if 0 <= nx < rows and 0 <= ny < cols and maze[nx, ny] != "#":
                 new_cost = cost + 1
 
                 if prev_dir is not None and prev_dir != i:
                     new_cost += 1000
 
-                print(i, (dx, dy), new_cost, best_cost, new_cost + min_cost(maze, (nx, ny), end), best_cost)
                 if new_cost <= best_cost:
                     if new_cost + min_cost(maze, (nx, ny), end) <= best_cost:
                         heapq.heappush(pq, (new_cost, nx, ny, i, path + [(x, y)]))
 
     return best_paths
 
+def find_paths(maze, start, end, cost):
+    rows, cols = len(maze), len(maze[0])
+    paths = []
+
+    def dfs(x, y, path, current_cost, prev_direction):
+        if (x, y) == (end[0], end[1]) and current_cost == cost:
+            paths.append(path[:])
+            return
+        
+        if current_cost > cost:
+            return
+
+        for direction, (dx, dy) in enumerate([(-1, 0), (1, 0), (0, -1), (0, 1)]):
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < rows and 0 <= ny < cols and maze[nx][ny] != 1 and maze[nx][ny] != "#":
+                maze[nx][ny] = 1  # Mark as visited
+                turn_cost = 1000 if prev_direction is not None and prev_direction != direction else 0
+                dfs(nx, ny, path + [(nx, ny)], current_cost + 1 + turn_cost, direction)
+                maze[nx][ny] = 0  # Unmark
+
+    maze[start[0]][start[1]] = 1  # Mark start as visited
+    dfs(start[0], start[1], [start], 0, None)
+    return paths
+    
 start, end = get_start_end(maze)
+paths = find_paths(maze, start, end, 7036)
+print(paths)
+# best_path = dijkstra_best_path(maze, start, end)[0]
+# best_cost, best_path = best_path
+# best_paths = dijkstra_all_paths(maze, start, end, best_cost)
+# positions = list()
 
-best_path = dijkstra_best_path(maze, start, end)[0]
-best_cost, best_path = best_path
-best_paths = dijkstra_all_paths(maze, start, end, best_cost)
-positions = list()
+# for cost, path in best_paths:
+#     print(f"Cost: {cost}, Path: {path}")
+#     path_in_maze = maze.copy()
 
-for cost, path in best_paths:
-    print(f"Cost: {cost}, Path: {path}")
-    path_in_maze = maze.copy()
+#     for x, y in path:
+#         positions += [str(x) + "," + str(y)]
 
-    for x, y in path:
-        positions += [str(x) + "," + str(y)]
-
-print(len(list(set(positions))))
+# print(len(list(set(positions))))
